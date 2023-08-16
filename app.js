@@ -31,10 +31,25 @@ app.get('/all-animals', (req, res) => {
 });
 
 app.get('/animal-details/:animalId', (req, res) => {
-  res.render('animal-details.html.njk', { animal: stuffedAnimalData.elephant });
+  const animalDetails = getAnimalDetails(req.params.animalId)
+  res.render('animal-details.html.njk', { animal: animalDetails });
 });
 
 app.get('/add-to-cart/:animalId', (req, res) => {
+  // console.log(req.session)
+  // console.log(req.params.animalId)
+  const sess = req.session
+  const animalId = req.params.animalId
+  if (!sess.cart){
+    sess.cart = {}
+  } 
+  if (!sess.cart[animalId]) {
+    sess.cart[animalId] = 0
+  }
+  sess.cart[animalId] += 1
+  // console.log(sess)
+
+  res.redirect('/cart')
   // TODO: Finish add to cart functionality
   // The logic here should be something like:
   // - check if a "cart" exists in the session, and create one (an empty
@@ -45,6 +60,35 @@ app.get('/add-to-cart/:animalId', (req, res) => {
 });
 
 app.get('/cart', (req, res) => {
+  // console.log(req.session)
+  if (!req.session.cart){
+    req.session.cart = {}
+  }
+  const {cart} = req.session
+  console.log(cart)
+  const animals = []
+  let total = 0
+
+  for (const animal in cart){
+    const animalDetails = getAnimalDetails(animal)
+    const qty = cart[animal]
+    animalDetails.qty = qty
+    
+    animalDetails.subtotal = qty * animalDetails.price
+    const {subtotal} = animalDetails
+
+    total += subtotal
+    animals.push(animalDetails)
+    console.log(animalDetails)
+  }
+  console.log(total)
+
+  res.render('cart.html.njk',{
+    animals: animals,
+    total: total,
+
+  })
+
   // TODO: Display the contents of the shopping cart.
 
   // The logic here will be something like:
@@ -54,16 +98,16 @@ app.get('/cart', (req, res) => {
   // cost of the order
   // - loop over the cart object, and for each animal id:
   //   - get the animal object by calling getAnimalDetails
+  //   - add quantity and total cost as properties on the animal object
   //   - compute the total cost for that type of animal
   //   - add this to the order total
-  //   - add quantity and total cost as properties on the animal object
   //   - add the animal object to the array created above
   // - pass the total order cost and the array of animal objects to the template
 
   // Make sure your function can also handle the case where no cart has
   // been added to the session
 
-  res.render('cart.html.njk');
+  // res.render('cart.html.njk');
 });
 
 app.get('/checkout', (req, res) => {
